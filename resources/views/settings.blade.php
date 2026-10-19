@@ -19,7 +19,7 @@
     <div class="box-industrial p-5 sm:p-6 space-y-4">
         <div class="font-mono text-xs uppercase tracking-wider text-[var(--text-secondary)] flex items-center justify-between">
             <span>STATUS KONEKSI SHEET</span>
-            <span>DIUJI: {{ date('d/m/Y H:i:s') }} WIB</span>
+            <span>DIUJI: {{ now()->format('d/m/Y H:i:s') }} WITA</span>
         </div>
 
         @php
@@ -80,6 +80,36 @@
                        required>
             </div>
 
+    <!-- Sheet ID Configuration Form -->
+    <div class="box-industrial p-5 sm:p-6 space-y-4">
+        <div class="font-mono text-xs uppercase tracking-wider text-[var(--text-secondary)]">
+            PENGATURAN ID SPREADSHEET
+        </div>
+
+        <form action="{{ route('settings.update') }}" method="POST" class="space-y-4">
+            @csrf
+            <div>
+                <div class="flex items-center justify-between mb-1.5 font-mono text-xs">
+                    <label for="google_sheet_id" class="text-[var(--text-primary)] uppercase font-semibold">
+                        GOOGLE SHEET ID ATAU URL SPREADSHEET
+                    </label>
+                    <a href="https://docs.google.com/spreadsheets/d/{{ $googleSheetId }}/edit" 
+                       target="_blank" 
+                       class="text-[var(--accent)] hover:underline uppercase inline-flex items-center">
+                        BUKA SHEET ↗
+                    </a>
+                </div>
+
+                <input type="text" name="google_sheet_id" id="google_sheet_id" 
+                       value="{{ old('google_sheet_id', $googleSheetId) }}" 
+                       class="w-full bg-[var(--bg)] border border-[var(--border)] px-3.5 py-2.5 font-mono text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]" 
+                       placeholder="1q_RvGbrrhVMseMBb-I6fPDVnpX7ng-MZv9FJ1FR-UPQ" 
+                       required>
+                <p class="font-mono text-[11px] text-[var(--text-secondary)] mt-1.5">
+                    ID adalah kode acak di URL spreadsheet antara <code class="text-[var(--accent)]">/d/</code> dan <code class="text-[var(--accent)]">/edit</code>. Anda juga dapat langsung menempelkan (paste) seluruh link URL Google Sheet di sini.
+                </p>
+            </div>
+
             <div class="flex flex-wrap items-center gap-2 pt-2 font-mono text-xs">
                 <button type="submit" name="sync_now" value="1" 
                         class="px-4 py-2 bg-[var(--accent)] text-black font-bold uppercase hover:bg-yellow-400 transition active:scale-95 cursor-pointer">
@@ -94,88 +124,98 @@
         </form>
     </div>
 
-    <!-- 3 Opsi Metode Sinkronisasi Otomatis -->
-    <div class="box-industrial p-5 sm:p-6 space-y-4">
-        <div class="font-mono text-xs uppercase tracking-wider text-[var(--accent)] font-bold flex items-center space-x-2">
-            <i class="fa-solid fa-robot"></i>
-            <span>3 METODE SINKRONISASI OTOMATIS (TANPA KLIK MANUAL)</span>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 font-mono text-xs">
-            
-            <!-- Metode 1 -->
-            <div class="p-3.5 bg-[var(--bg)] border border-[var(--border)] flex flex-col justify-between">
-                <div>
-                    <span class="text-[var(--accent)] font-bold block mb-1">1. AUTO-SYNC ON LOAD (AKTIF)</span>
-                    <p class="text-[var(--text-secondary)] text-[11px] leading-relaxed">
-                        Setiap kali ada yang membuka dashboard, jika data terakhir sudah lebih dari 3 menit, sistem otomatis menarik data baru di latar belakang.
-                    </p>
-                </div>
-                <span class="text-[#2ECC71] text-[10px] mt-2 block font-bold">✓ SUDAH OTOMATIS AKTIF</span>
-            </div>
-
-            <!-- Metode 2 -->
-            <div class="p-3.5 bg-[var(--bg)] border border-[var(--border)] flex flex-col justify-between">
-                <div>
-                    <span class="text-[var(--accent)] font-bold block mb-1">2. CRON JOB SERVER</span>
-                    <p class="text-[var(--text-secondary)] text-[11px] leading-relaxed">
-                        Jalankan scheduler Laravel setiap 5 menit di background server:
-                    </p>
-                    <code class="block bg-[var(--surface)] text-[10px] p-1.5 mt-1.5 border border-[var(--border)] text-[var(--text-primary)]">
-                        * * * * * php artisan schedule:run
-                    </code>
-                </div>
-                <span class="text-[var(--text-secondary)] text-[10px] mt-2 block">JADWAL TIAP 5 MENIT</span>
-            </div>
-
-            <!-- Metode 3 -->
-            <div class="p-3.5 bg-[var(--bg)] border border-[var(--border)] flex flex-col justify-between">
-                <div>
-                    <span class="text-[var(--accent)] font-bold block mb-1">3. REAL-TIME GOOGLE FORM TRIGGER</span>
-                    <p class="text-[var(--text-secondary)] text-[11px] leading-relaxed">
-                        Karyawan submit Google Form &rarr; data langsung masuk ke dashboard detik itu juga via Webhook Apps Script.
-                    </p>
-                    <div class="text-[10px] text-[var(--text-primary)] mt-1.5 bg-[var(--surface)] p-1.5 border border-[var(--border)] truncate">
-                        POST: /api/webhook/google-form
-                    </div>
-                </div>
-                <span class="text-[var(--text-secondary)] text-[10px] mt-2 block">REAL-TIME ON SUBMIT</span>
-            </div>
-
-        </div>
-    </div>
-
-    <!-- Petunjuk Singkat Izin Akses & Format Form -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        
-        <!-- Akses Berbagi -->
-        <div class="box-industrial p-5 space-y-2.5 font-mono text-xs">
-            <div class="text-[var(--text-primary)] font-bold uppercase flex items-center space-x-2">
-                <i class="fa-solid fa-lock-open text-[var(--accent)]"></i>
-                <span>CARA BUKA HAK AKSES SHEET</span>
-            </div>
-            <p class="text-[var(--text-secondary)] leading-relaxed">
-                1. Buka spreadsheet Google Form Anda di browser.<br>
-                2. Klik tombol <strong>"Bagikan" (Share)</strong> di kanan atas.<br>
-                3. Pada bagian Akses Umum, ubah menjadi <strong>"Siapa saja yang memiliki link" (Anyone with the link)</strong> dengan hak <strong>Pelihat (Viewer)</strong>.<br>
-                4. Data akan otomatis terbaca oleh dashboard!
+    <!-- PANDUAN LENGKAP KONEKSI & MAINTENANCE UNTUK CLIENT (MANDIRI & MUDAH) -->
+    <div class="box-industrial p-5 sm:p-6 space-y-6">
+        <div class="border-b border-[var(--border)] pb-3">
+            <span class="font-mono text-[11px] text-[var(--accent)] uppercase font-bold tracking-wider block">PANDUAN OPERASIONAL</span>
+            <h2 class="font-heading font-black text-2xl uppercase tracking-tight text-[var(--text-primary)] mt-0.5">
+                PANDUAN KONEKSI & MAINTENANCE SISTEM (UNTUK CLIENT)
+            </h2>
+            <p class="font-mono text-xs text-[var(--text-secondary)] mt-1">
+                Ikuti langkah-langkah mudah di bawah ini jika ingin mengganti Google Form/Sheet baru atau memperbaiki kendala sinkronisasi secara mandiri.
             </p>
         </div>
 
-        <!-- Kolom Form yang Dipetakan -->
-        <div class="box-industrial p-5 space-y-2.5 font-mono text-xs">
-            <div class="text-[var(--text-primary)] font-bold uppercase flex items-center space-x-2">
-                <i class="fa-solid fa-list-check text-[var(--accent)]"></i>
-                <span>KOLOM GFORM YANG TERDETEKSI</span>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 font-mono text-xs">
+            
+            <!-- Step 1: Izin Akses Spreadsheet -->
+            <div class="p-4 bg-[var(--bg)] border border-[var(--border)] flex flex-col justify-between space-y-3" style="border-radius: var(--radius);">
+                <div>
+                    <div class="flex items-center space-x-2 text-[var(--accent)] font-bold text-sm mb-2">
+                        <span class="w-5 h-5 rounded-full bg-[var(--accent)] text-black flex items-center justify-center text-xs">1</span>
+                        <span>IZIN AKSES SHEET</span>
+                    </div>
+                    <ol class="space-y-1.5 text-[var(--text-secondary)] text-[11px] leading-relaxed list-decimal pl-4">
+                        <li>Buka Google Spreadsheet form Anda.</li>
+                        <li>Klik tombol biru <strong>"Bagikan" (Share)</strong> di kanan atas.</li>
+                        <li>Di bagian <strong>Akses umum</strong>, pilih <strong>"Siapa saja yang memiliki link"</strong>.</li>
+                        <li>Pastikan perannya diset ke <strong>"Pelihat" (Viewer)</strong>.</li>
+                        <li>Klik <strong>Selesai</strong>.</li>
+                    </ol>
+                </div>
+                <div class="pt-2 border-t border-[var(--border)] text-[10px] text-[#2ECC71] font-bold">
+                    ✓ SYARAT UTAMA SINKRONISASI
+                </div>
             </div>
-            <div class="space-y-1 text-[var(--text-secondary)]">
-                <div>• <strong class="text-[var(--text-primary)]">Nama:</strong> Nama Pelapor / Karyawan</div>
-                <div>• <strong class="text-[var(--text-primary)]">Departemen:</strong> Service, Produksi, Maintenance, dll.</div>
-                <div>• <strong class="text-[var(--text-primary)]">Kategori Temuan:</strong> Tindakan (+5), Kondisi (+3), Masukan (+3), Action (+4)</div>
-                <div>• <strong class="text-[var(--text-primary)]">Foto & Keterangan:</strong> Link Google Drive & Deskripsi</div>
+
+            <!-- Step 2: Izin Akses Folder Foto Drive -->
+            <div class="p-4 bg-[var(--bg)] border border-[var(--border)] flex flex-col justify-between space-y-3" style="border-radius: var(--radius);">
+                <div>
+                    <div class="flex items-center space-x-2 text-[var(--accent)] font-bold text-sm mb-2">
+                        <span class="w-5 h-5 rounded-full bg-[var(--accent)] text-black flex items-center justify-center text-xs">2</span>
+                        <span>IZIN FOTO BUKTI (DRIVE)</span>
+                    </div>
+                    <ol class="space-y-1.5 text-[var(--text-secondary)] text-[11px] leading-relaxed list-decimal pl-4">
+                        <li>Buka <strong>Google Drive</strong> akun pemilik form.</li>
+                        <li>Cari folder respon tempat form menyimpan foto upload (biasanya dinamai otomatis sesuai pertanyaan upload form).</li>
+                        <li>Klik kanan folder tersebut &rarr; <strong>Bagikan (Share)</strong>.</li>
+                        <li>Ubah Akses Umum menjadi <strong>"Siapa saja yang memiliki link"</strong> (Pelihat).</li>
+                    </ol>
+                </div>
+                <div class="pt-2 border-t border-[var(--border)] text-[10px] text-[#2ECC71] font-bold">
+                    ✓ AGAR FOTO DAPAT TAMPIL DI WEB
+                </div>
             </div>
+
+            <!-- Step 3: Format Pertanyaan GForm -->
+            <div class="p-4 bg-[var(--bg)] border border-[var(--border)] flex flex-col justify-between space-y-3" style="border-radius: var(--radius);">
+                <div>
+                    <div class="flex items-center space-x-2 text-[var(--accent)] font-bold text-sm mb-2">
+                        <span class="w-5 h-5 rounded-full bg-[var(--accent)] text-black flex items-center justify-center text-xs">3</span>
+                        <span>FORMAT GFORM OTOMATIS</span>
+                    </div>
+                    <ul class="space-y-1.5 text-[var(--text-secondary)] text-[11px] leading-relaxed list-disc pl-4">
+                        <li><strong class="text-[var(--text-primary)]">Timestamp:</strong> Dibuat otomatis oleh Google Form saat submit.</li>
+                        <li><strong class="text-[var(--text-primary)]">NRP:</strong> Pertanyaan nomor registrasi (Contoh: <code class="text-[var(--accent)]">001</code>).</li>
+                        <li><strong class="text-[var(--text-primary)]">Nama Karyawan:</strong> Teks singkat nama pelapor.</li>
+                        <li><strong class="text-[var(--text-primary)]">Departemen:</strong> Dropdown atau teks singkat divisi.</li>
+                        <li><strong class="text-[var(--text-primary)]">Jenis Temuan:</strong> Pilihan indikator kegiatan (+1, +2, +3, +4).</li>
+                    </ul>
+                </div>
+                <div class="pt-2 border-t border-[var(--border)] text-[10px] text-[var(--accent)] font-bold">
+                    ✓ TERDETEKSI OTOMATIS OLEH SISTEM
+                </div>
+            </div>
+
         </div>
 
+        <!-- Troubleshooting Cepat Jika Ada Masalah -->
+        <div class="p-4 bg-[var(--bg)] border border-[var(--border)] space-y-2 font-mono text-xs">
+            <span class="text-[var(--accent)] font-bold uppercase flex items-center space-x-1.5 text-xs">
+                <i class="fa-solid fa-wrench"></i>
+                <span>TROUBLESHOOTING / JIKA TERJADI KENDALA:</span>
+            </span>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px] text-[var(--text-secondary)] leading-relaxed pt-1">
+                <div>
+                    <strong class="text-[var(--text-primary)] block">• Data di Web Belum Muncul Setelah Submit?</strong>
+                    Tekan tombol <strong>"SINKRON"</strong> di pojok kanan atas navbar website, atau pastikan Sheet ID di atas sudah benar.
+                </div>
+                <div>
+                    <strong class="text-[var(--text-primary)] block">• Baris di Sheet Sudah Dihapus Tapi Masih Ada di Web?</strong>
+                    Cukup klik tombol <strong>"SIMPAN & SINKRONKAN SEKARANG"</strong> di halaman ini, sistem akan otomatis membersihkan data yang terhapus di sheet.
+                </div>
+            </div>
+        </div>
     </div>
 
 </div>

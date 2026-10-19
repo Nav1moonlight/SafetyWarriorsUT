@@ -15,8 +15,20 @@
     activeCaption: '',
     activeReporter: '',
     activeDept: '',
+    activeNrp: '',
     activeDate: '',
     activePoints: 0,
+    activeIndicator: '',
+    activeCategory: 'EHS',
+    employeeModal: false,
+    activeEmployee: {
+        name: '',
+        nrp: '',
+        department: '',
+        points: 0,
+        reports_count: 0,
+        reports: []
+    },
     isSyncing: false,
     mobileTab: 'leaderboard'
 }" x-init="if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light');">
@@ -168,13 +180,13 @@
                 <!-- Logo & Brand -->
                 <div class="flex items-center space-x-3">
                     <a href="{{ route('dashboard') }}" class="flex items-center space-x-2.5">
-                        <img src="{{ asset('images/logo.png') }}" alt="Safety Warrior Logo" class="w-8 h-8 object-contain">
+                        <img src="{{ asset('images/logo.png') }}" alt="Impact Warrior Logo" class="w-8 h-8 object-contain">
                         <div class="flex items-baseline space-x-2">
                             <span class="font-heading font-extrabold text-xl tracking-wider uppercase text-[var(--text-primary)]">
-                                SAFETY WARRIOR
+                                IMPACT WARRIOR
                             </span>
-                            <span class="hidden md:inline font-mono text-[11px] text-[var(--text-secondary)] uppercase tracking-wider">
-                                / K3 SCOREBOARD
+                            <span class="hidden md:inline font-mono text-[11px] text-[var(--accent)] uppercase tracking-wider font-semibold">
+                                / EHS & CSR SCOREBOARD
                             </span>
                         </div>
                     </a>
@@ -272,9 +284,9 @@
         </a>
     </div>
 
-    <!-- Image Lightbox Modal -->
-    <div x-cloak x-show="photoModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/90" @keydown.escape.window="photoModal = false">
-        <div class="relative max-w-3xl w-full bg-[var(--surface)] border border-[var(--border)] overflow-hidden flex flex-col max-h-[90vh]" style="border-radius: var(--radius);" @click.away="photoModal = false">
+    <!-- Image Lightbox Modal (Higher z-index so it sits safely above employeeModal) -->
+    <div x-cloak x-show="photoModal" class="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-6 bg-black/95 backdrop-blur-sm" @keydown.escape.window="photoModal = false">
+        <div class="relative max-w-3xl w-full bg-[var(--surface)] border border-[var(--border)] overflow-hidden flex flex-col max-h-[90vh] shadow-2xl" style="border-radius: var(--radius);" @click.away="photoModal = false">
             <div class="flex items-center justify-between px-4 py-2.5 border-b border-[var(--border)] font-mono text-xs">
                 <div class="flex items-center space-x-2">
                     <span class="w-2 h-2 bg-[var(--accent)]"></span>
@@ -293,9 +305,139 @@
                 <img :src="activePhoto" alt="Foto Temuan K3" class="max-h-[65vh] w-auto max-w-full object-contain">
             </div>
 
-            <div class="p-4 border-t border-[var(--border)] text-xs text-[var(--text-primary)]">
-                <div class="font-mono text-[10px] text-[var(--text-secondary)] uppercase tracking-wider mb-1" x-text="'TANGGAL: ' + activeDate"></div>
-                <p x-text="activeCaption" class="leading-relaxed"></p>
+            <!-- Complete Detail Footer Below Photo -->
+            <div class="p-4 border-t border-[var(--border)] text-xs text-[var(--text-primary)] space-y-3 bg-[var(--surface)]">
+                <!-- Meta Grid (Nama, Departemen, Indikator, Poin, Tanggal) -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono text-[11px] p-3 bg-[var(--bg)] border border-[var(--border)]" style="border-radius: var(--radius);">
+                    <div>
+                        <span class="text-[var(--text-secondary)] uppercase text-[9px] block">NAMA PELAPOR</span>
+                        <div class="flex items-center space-x-1.5 mt-0.5">
+                            <span class="font-bold text-[var(--text-primary)] text-xs truncate" x-text="activeReporter"></span>
+                            <span x-show="activeNrp" class="px-1 py-0.2 bg-[var(--surface)] text-[var(--accent)] border border-[var(--border)] font-mono text-[9px] font-bold" x-text="'NRP: ' + activeNrp"></span>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="text-[var(--text-secondary)] uppercase text-[9px] block">DEPARTEMEN</span>
+                        <span class="font-bold text-[var(--text-primary)] text-xs truncate block mt-0.5" x-text="activeDept"></span>
+                    </div>
+                    <div>
+                        <span class="text-[var(--text-secondary)] uppercase text-[9px] block">INDIKATOR KEGIATAN</span>
+                        <span class="font-bold text-[var(--accent)] text-xs truncate block mt-0.5" x-text="activeIndicator"></span>
+                    </div>
+                    <div>
+                        <span class="text-[var(--text-secondary)] uppercase text-[9px] block">WAKTU PELAPORAN</span>
+                        <span class="text-[var(--text-secondary)] text-xs block mt-0.5" x-text="activeDate + ' WITA'"></span>
+                    </div>
+                </div>
+
+                <!-- Keterangan / Penjelasan Temuan -->
+                <div>
+                    <span class="font-mono text-[10px] text-[var(--text-secondary)] uppercase tracking-wider block mb-1">
+                        KETERANGAN / PENJELASAN TEMUAN:
+                    </span>
+                    <p x-text="activeCaption || 'Tidak ada keterangan tambahan.'" class="leading-relaxed text-xs p-3 bg-[var(--bg)] border border-[var(--border)] whitespace-pre-wrap"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interactive Employee Reports Detail Modal (When row in leaderboard is clicked) -->
+    <div x-cloak x-show="employeeModal && !photoModal" 
+         class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-sm"
+         x-transition:enter="ease-out duration-200"
+         x-transition:enter-start="opacity-0 scale-95"
+         x-transition:enter-end="opacity-100 scale-100"
+         x-transition:leave="ease-in duration-150"
+         x-transition:leave-start="opacity-100 scale-100"
+         x-transition:leave-end="opacity-0 scale-95">
+        
+        <div class="box-industrial w-full max-w-3xl max-h-[90vh] flex flex-col bg-[var(--surface)] border border-[var(--border)] shadow-2xl overflow-hidden" 
+             @click.away="if (!photoModal) employeeModal = false">
+            
+            <!-- Modal Header -->
+            <div class="p-4 border-b border-[var(--border)] bg-[var(--bg)] flex items-start justify-between">
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span class="font-heading font-black text-2xl uppercase tracking-tight text-[var(--text-primary)]" x-text="activeEmployee.name"></span>
+                        <span x-show="activeEmployee.nrp" class="px-2 py-0.5 bg-[var(--surface)] text-[var(--accent)] border border-[var(--accent)] font-mono text-xs font-bold" x-text="'NRP: ' + activeEmployee.nrp"></span>
+                    </div>
+                    <div class="font-mono text-xs text-[var(--text-secondary)] uppercase mt-0.5 flex items-center space-x-2">
+                        <span>DEPARTEMEN <strong class="text-[var(--text-primary)]" x-text="activeEmployee.department"></strong></span>
+                        <span>•</span>
+                        <span class="text-[var(--accent)] font-bold" x-text="activeEmployee.points + ' TOTAL POIN'"></span>
+                        <span>•</span>
+                        <span x-text="activeEmployee.reports_count + ' LAPORAN TERVALIDASI'"></span>
+                    </div>
+                </div>
+
+                <button @click="employeeModal = false" class="text-[var(--text-secondary)] hover:text-white px-2 py-1 text-sm border border-[var(--border)] bg-[var(--surface)] hover:bg-zinc-800 transition">
+                    <i class="fa-solid fa-xmark mr-1"></i> TUTUP
+                </button>
+            </div>
+
+            <!-- Modal Content: List of Reports with Evidence -->
+            <div class="p-4 overflow-y-auto space-y-3 divide-y divide-[var(--border)]">
+                <template x-if="!activeEmployee.reports || activeEmployee.reports.length === 0">
+                    <div class="py-8 text-center font-mono text-xs text-[var(--text-secondary)] uppercase">
+                        Tidak ada rincian laporan yang ditemukan.
+                    </div>
+                </template>
+
+                <template x-for="(rpt, idx) in activeEmployee.reports" :key="rpt.id || idx">
+                    <div class="pt-3 first:pt-0 flex flex-col md:flex-row gap-4">
+                        <!-- Evidence photo preview if exists -->
+                        <div class="w-full md:w-36 flex-shrink-0">
+                            <template x-if="rpt.photo_url">
+                                <div class="relative group cursor-pointer border border-[var(--border)] overflow-hidden bg-black h-24"
+                                     @click="activePhoto = rpt.photo_url;
+                                             activeCaption = rpt.description;
+                                             activeReporter = activeEmployee.name;
+                                             activeDept = activeEmployee.department;
+                                             activeNrp = activeEmployee.nrp;
+                                             activeDate = rpt.reported_at;
+                                             activePoints = rpt.points;
+                                             activeIndicator = rpt.activity_indicator;
+                                             activeCategory = rpt.indicator_category;
+                                             photoModal = true;">
+                                    <img :src="rpt.photo_url" class="w-full h-full object-cover group-hover:scale-105 transition duration-200">
+                                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition text-[10px] font-mono font-bold text-white uppercase">
+                                        <i class="fa-solid fa-magnifying-glass mr-1"></i> LIHAT
+                                    </div>
+                                </div>
+                            </template>
+                            <template x-if="!rpt.photo_url">
+                                <div class="h-24 border border-dashed border-[var(--border)] bg-[var(--bg)] flex flex-col items-center justify-center text-[var(--text-secondary)] text-[10px] font-mono">
+                                    <i class="fa-solid fa-image-slash text-base mb-1"></i>
+                                    <span>TANPA FOTO</span>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Report details -->
+                        <div class="flex-1 space-y-1.5">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <div class="flex items-center space-x-1.5 font-mono text-[11px]">
+                                    <span class="px-1.5 py-0.2 bg-[var(--bg)] text-[var(--accent)] border border-[var(--border)] font-bold uppercase" x-text="rpt.indicator_category"></span>
+                                    <span class="font-bold text-[var(--text-primary)]" x-text="rpt.activity_indicator"></span>
+                                </div>
+                                <div class="flex items-center space-x-2 font-mono text-xs">
+                                    <span class="px-2 py-0.5 bg-[var(--accent)] text-black font-bold" x-text="'+' + rpt.points + ' POIN'"></span>
+                                    <span class="text-[var(--text-secondary)] text-[10px]" x-text="rpt.reported_at + ' WITA'"></span>
+                                </div>
+                            </div>
+
+                            <p class="text-xs text-[var(--text-primary)] leading-relaxed bg-[var(--bg)] p-2.5 border border-[var(--border)] font-body whitespace-pre-wrap" x-text="rpt.description || 'Tidak ada keterangan tambahan.'"></p>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-3 border-t border-[var(--border)] bg-[var(--bg)] flex items-center justify-between font-mono text-[11px] text-[var(--text-secondary)]">
+                <span>IMPACT WARRIOR AUDIT TRAIL</span>
+                <button @click="employeeModal = false" class="px-3 py-1 border border-[var(--border)] hover:bg-[var(--surface)] text-[var(--text-primary)] font-mono uppercase text-xs">
+                    Tutup Jendela
+                </button>
             </div>
         </div>
     </div>
@@ -305,7 +447,7 @@
         <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
             <div class="flex items-center justify-center space-x-2">
                 <img src="{{ asset('images/logo.png') }}" alt="Logo" class="w-4 h-4 object-contain inline">
-                <span>SAFETY WARRIOR — EVALUASI BULANAN K3 (PERIODE TGL 1 S.D. 25)</span>
+                <span>IMPACT WARRIOR — EVALUASI BULANAN EHS & CSR (PERIODE TGL 1 S.D. 25)</span>
             </div>
             <div class="text-[10px]">INTEGRASI GOOGLE FORMS & SHEETS</div>
         </div>

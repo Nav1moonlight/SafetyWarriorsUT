@@ -34,19 +34,20 @@ class PhotoProxyController extends Controller
         $url = "https://drive.google.com/thumbnail?id={$cleanId}&sz=w1000";
 
         try {
-            $response = Http::timeout(4)
+            $response = Http::timeout(8)
                 ->withHeaders([
-                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) SafetyWarrior/1.0',
+                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 ])
                 ->get($url);
 
             if ($response->successful()) {
                 $body = $response->body();
-                // Jika bukan halaman HTML login Google
-                if (!str_contains($body, '<!doctype') && !str_contains($body, '<html') && !str_contains($body, 'accounts.google.com')) {
+                // Jika respon berupa image
+                $contentType = $response->header('Content-Type') ?? '';
+                if (str_contains($contentType, 'image') || (!str_contains($body, '<!doctype') && !str_contains($body, '<html') && !str_contains($body, 'accounts.google.com'))) {
                     Storage::put($cacheFile, $body);
                     return response($body, 200, [
-                        'Content-Type' => 'image/jpeg',
+                        'Content-Type' => $contentType ?: 'image/jpeg',
                         'Cache-Control' => 'public, max-age=86400',
                     ]);
                 }

@@ -8,7 +8,7 @@ Route::get('/', [SafetyWarriorController::class, 'index'])->name('dashboard');
 Route::post('/sync', [SafetyWarriorController::class, 'sync'])->name('sync');
 Route::get('/settings', [SafetyWarriorController::class, 'settings'])->name('settings');
 Route::post('/settings', [SafetyWarriorController::class, 'updateSettings'])->name('settings.update');
-Route::get('/export-csv', [SafetyWarriorController::class, 'exportCsv'])->name('export.csv');
+Route::get('/print-pdf', [SafetyWarriorController::class, 'printPdf'])->name('print.pdf');
 
 // Photo Proxy Route (Google Drive Image Resolver)
 Route::get('/drive-image/{id}', [PhotoProxyController::class, 'show'])->name('drive.image');

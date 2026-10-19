@@ -104,6 +104,21 @@ class GoogleSheetSyncService
     }
 
     /**
+     * Dapatkan daftar username / nama terdaftar yang diizinkan (whitelist).
+     * Jika kosong, semua nama diterima.
+     */
+    public function getAllowedUsers(): array
+    {
+        $raw = AppSetting::get('allowed_users', '');
+        if (empty(trim($raw))) {
+            return [];
+        }
+
+        $list = array_map('trim', preg_split('/[\r\n,]+/', $raw));
+        return array_values(array_filter($list));
+    }
+
+    /**
      * Sinkronisasi data dari Google Sheet ke database lokal
      */
     public function sync(?string $sheetId = null): array
@@ -141,33 +156,56 @@ class GoogleSheetSyncService
                 ];
             }
 
+            $allowedUsers = $this->getAllowedUsers();
+            $allowedLower = array_map('strtolower', $allowedUsers);
+
             $imported = 0;
             $updated = 0;
+            $skipped = 0;
+            $activeSheetRowIds = [];
 
             foreach ($rows as $row) {
                 if (empty($row['reporter_name'])) {
                     continue;
                 }
 
+                // Cek whitelist nama terdaftar / username
+                if (!empty($allowedLower) && !in_array(strtolower($row['reporter_name']), $allowedLower)) {
+                    $skipped++;
+                    continue;
+                }
+
                 $sheetRowId = md5($row['reported_at']->format('Y-m-d H:i:s') . '_' . $row['reporter_name'] . '_' . ($row['description'] ?? ''));
+                $activeSheetRowIds[] = $sheetRowId;
 
                 $points = SafetyReport::calculatePoints(
-                    $row['has_unsafe_act'],
                     $row['has_unsafe_condition'],
+                    $row['has_unsafe_act'],
                     $row['has_suggestion'],
-                    $row['has_action']
+                    $row['has_direct_action'],
+                    $row['has_action'],
+                    $row['has_ehs_activity'],
+                    $row['has_csr_activity'],
+                    $row['has_speaker_activity']
                 );
 
                 $report = SafetyReport::updateOrCreate(
                     ['sheet_row_id' => $sheetRowId],
                     [
                         'reported_at' => $row['reported_at'],
+                        'nrp' => $row['nrp'] ?? null,
                         'reporter_name' => trim($row['reporter_name']),
                         'department' => trim($row['department'] ?: 'Umum'),
+                        'activity_indicator' => $row['activity_indicator'] ?? null,
+                        'indicator_category' => $row['indicator_category'] ?? 'EHS',
                         'has_unsafe_act' => $row['has_unsafe_act'],
                         'has_unsafe_condition' => $row['has_unsafe_condition'],
                         'has_suggestion' => $row['has_suggestion'],
                         'has_action' => $row['has_action'],
+                        'has_direct_action' => $row['has_direct_action'],
+                        'has_ehs_activity' => $row['has_ehs_activity'],
+                        'has_csr_activity' => $row['has_csr_activity'],
+                        'has_speaker_activity' => $row['has_speaker_activity'],
                         'points' => $points,
                         'description' => $row['description'] ?? null,
                         'photo_url' => $row['photo_url'] ?? null,
@@ -183,14 +221,33 @@ class GoogleSheetSyncService
                 }
             }
 
+            // Hapus data lokal yang sudah dihapus di Google Sheet (Mirroring sinkronisasi penuh)
+            $deleted = 0;
+            if (!empty($activeSheetRowIds)) {
+                $deleted = SafetyReport::whereNotNull('sheet_row_id')
+                    ->whereNotIn('sheet_row_id', $activeSheetRowIds)
+                    ->delete();
+            } else {
+                $deleted = SafetyReport::whereNotNull('sheet_row_id')->delete();
+            }
+
             AppSetting::set('last_sync_at', Carbon::now()->toIso8601String());
-            AppSetting::set('last_sync_status', "Berhasil: {$imported} baru, {$updated} diperbarui");
+            $syncMsg = "Berhasil: {$imported} baru, {$updated} diperbarui";
+            if ($deleted > 0) {
+                $syncMsg .= ", {$deleted} data lama dibersihkan";
+            }
+            if ($skipped > 0) {
+                $syncMsg .= ", {$skipped} dilewati (bukan nama resmi)";
+            }
+            AppSetting::set('last_sync_status', $syncMsg);
 
             return [
                 'success' => true,
-                'message' => "Sinkronisasi selesai. {$imported} data baru ditambahkan, {$updated} data diperbarui.",
+                'message' => "Sinkronisasi selesai. {$imported} data baru ditambahkan, {$updated} diperbarui" . ($deleted > 0 ? ", {$deleted} data yang dihapus dari Sheet telah dibersihkan." : "."),
                 'imported' => $imported,
                 'updated' => $updated,
+                'deleted' => $deleted,
+                'skipped' => $skipped,
                 'total_rows' => count($rows),
             ];
         } catch (\Exception $e) {
@@ -207,24 +264,32 @@ class GoogleSheetSyncService
      */
     protected function parseCsv(string $csvString): array
     {
-        $lines = explode("\n", $csvString);
         $data = [];
         $headers = [];
 
-        foreach ($lines as $i => $line) {
-            $line = trim($line);
-            if (empty($line)) continue;
+        // Gunakan php://temp stream dengan fgetcsv untuk parsing CSV RFC-compliant
+        // Ini memastikan baris dengan deskripsi multi-line / enter di dalam tanda kutip tidak terpotong menjadi baris rusak
+        $stream = fopen('php://temp', 'r+');
+        fwrite($stream, $csvString);
+        rewind($stream);
 
-            $cols = str_getcsv($line);
-
-            if ($i === 0) {
-                foreach ($cols as $idx => $col) {
-                    $headers[$idx] = strtolower(trim($col));
-                }
+        $rowIdx = 0;
+        while (($cols = fgetcsv($stream)) !== false) {
+            // Lewati baris kosong
+            if (empty($cols) || (count($cols) === 1 && $cols[0] === null)) {
                 continue;
             }
 
-            if (empty($headers) || count($cols) === 0) {
+            if ($rowIdx === 0) {
+                foreach ($cols as $idx => $col) {
+                    $headers[$idx] = strtolower(trim((string)$col));
+                }
+                $rowIdx++;
+                continue;
+            }
+            $rowIdx++;
+
+            if (empty($headers)) {
                 continue;
             }
 
@@ -234,11 +299,12 @@ class GoogleSheetSyncService
             }
         }
 
+        fclose($stream);
         return $data;
     }
 
     /**
-     * Mapping kolom
+     * Mapping kolom respon Google Sheet sesuai sistem indikator IMPACT WARRIOR
      */
     protected function mapColumns(array $headers, array $cols): ?array
     {
@@ -246,16 +312,25 @@ class GoogleSheetSyncService
             'reported_at' => Carbon::now(),
             'reporter_name' => '',
             'department' => 'Umum',
+            'activity_indicator' => '',
+            'indicator_category' => 'EHS',
             'has_unsafe_act' => false,
             'has_unsafe_condition' => false,
             'has_suggestion' => false,
             'has_action' => false,
+            'has_direct_action' => false,
+            'has_ehs_activity' => false,
+            'has_csr_activity' => false,
+            'has_speaker_activity' => false,
             'description' => '',
             'photo_url' => '',
             'location' => '',
             'raw_payload' => [],
         ];
 
+        $rawIndicatorText = '';
+
+        // 1. Dapatkan teks indikator kegiatan terlebih dahulu dengan prioritas kolom khusus
         foreach ($cols as $idx => $val) {
             $val = trim($val);
             $header = $headers[$idx] ?? '';
@@ -263,70 +338,141 @@ class GoogleSheetSyncService
 
             if (empty($val)) continue;
 
+            // Foto Bukti
+            if (str_contains($header, 'foto') || str_contains($header, 'photo') || str_contains($header, 'gambar') || str_contains($val, 'drive.google.com') || (str_starts_with($val, 'http') && str_contains($header, 'bukti'))) {
+                $row['photo_url'] = $val;
+                continue;
+            }
+
+            // Keterangan / Deskripsi
+            if (str_contains($header, 'keterangan') || str_contains($header, 'penjelasan') || str_contains($header, 'deskripsi') || str_contains($header, 'detail')) {
+                $row['description'] = $val;
+                continue;
+            }
+
+            // Timestamp
             if (str_contains($header, 'timestamp') || str_contains($header, 'waktu') || str_contains($header, 'tanggal') || $idx === 0) {
                 try {
                     $row['reported_at'] = Carbon::parse($val);
                 } catch (\Exception $e) {}
+                continue;
             }
 
+            // NRP Karyawan (jika ada kolom khusus nrp / nik / id)
+            if (str_contains($header, 'nrp') || str_contains($header, 'nik') || str_contains($header, 'id karyawan') || str_contains($header, 'nomor registrasi')) {
+                $row['nrp'] = $val;
+                continue;
+            }
+
+            // Nama Pelapor (Bisa juga format "123456 - Nama Karyawan")
             if (str_contains($header, 'nama') || str_contains($header, 'name') || str_contains($header, 'pelapor')) {
-                $row['reporter_name'] = $val;
+                // Ekstrak NRP jika nama digabung format "123456 - Taufan" atau "Taufan (123456)"
+                if (preg_match('/^(\d{5,12})\s*[-_|\/]\s*(.*)$/', $val, $m)) {
+                    $row['nrp'] = $m[1];
+                    $row['reporter_name'] = trim($m[2]);
+                } elseif (preg_match('/^(.*?)\s*[\(\[](\d{5,12})[\)\]]$/', $val, $m)) {
+                    $row['reporter_name'] = trim($m[1]);
+                    $row['nrp'] = $m[2];
+                } else {
+                    $row['reporter_name'] = $val;
+                }
+                continue;
             }
 
+            // Departemen
             if (str_contains($header, 'departemen') || str_contains($header, 'department') || str_contains($header, 'dept') || str_contains($header, 'divisi') || str_contains($header, 'section')) {
-                $row['department'] = $val;
+                if (!empty($val)) {
+                    $row['department'] = $val;
+                }
+                continue;
             }
 
-            $lowerVal = strtolower($val);
-            if (str_contains($header, 'tindakan') || str_contains($header, 'kondisi') || str_contains($header, 'masukan') || str_contains($header, 'pengendalian') || str_contains($header, 'action') || str_contains($header, 'jenis') || str_contains($header, 'kategori') || str_contains($header, 'temuan')) {
-                if (str_contains($lowerVal, 'tindakan bahaya') || str_contains($lowerVal, 'tindakan tidak aman') || str_contains($lowerVal, 'unsafe act')) {
-                    $row['has_unsafe_act'] = true;
-                }
-                if (str_contains($lowerVal, 'kondisi bahaya') || str_contains($lowerVal, 'kondisi tidak aman') || str_contains($lowerVal, 'unsafe condition')) {
-                    $row['has_unsafe_condition'] = true;
-                }
-                if (str_contains($lowerVal, 'masukan') || str_contains($lowerVal, 'solusi') || str_contains($lowerVal, 'pengendalian') || str_contains($lowerVal, 'saran')) {
-                    $row['has_suggestion'] = true;
-                }
-                if (str_contains($lowerVal, 'action nyata') || str_contains($lowerVal, 'action') || str_contains($lowerVal, 'perbaikan')) {
-                    $row['has_action'] = true;
-                }
+            // Jenis Temuan / Indikator Kegiatan
+            if (str_contains($header, 'jenis') || str_contains($header, 'indikator') || str_contains($header, 'kategori') || $header === 'temuan' || str_contains($header, 'kegiatan')) {
+                $rawIndicatorText = $val;
+                continue;
             }
 
-            if (str_contains($header, 'foto') || str_contains($header, 'photo') || str_contains($header, 'gambar') || str_contains($header, 'bukti') || str_contains($val, 'drive.google.com') || str_contains($val, 'http')) {
-                if (str_starts_with($val, 'http://') || str_starts_with($val, 'https://') || str_contains($val, 'drive.google.com')) {
-                    $row['photo_url'] = $val;
-                }
-            }
-
-            if (str_contains($header, 'keterangan') || str_contains($header, 'deskripsi') || str_contains($header, 'penjelasan') || str_contains($header, 'detail')) {
-                $row['description'] = $val;
-            }
-
+            // Lokasi
             if (str_contains($header, 'lokasi') || str_contains($header, 'area') || str_contains($header, 'tempat')) {
                 $row['location'] = $val;
+                continue;
             }
         }
 
         if (empty($row['reporter_name']) && isset($cols[1])) {
             $row['reporter_name'] = $cols[1];
         }
-        if ($row['department'] === 'Umum' && isset($cols[2]) && !empty($cols[2])) {
+        if (($row['department'] === 'Umum' || empty($row['department'])) && isset($cols[2]) && !empty($cols[2])) {
             $row['department'] = $cols[2];
         }
 
-        if (!$row['has_unsafe_act'] && !$row['has_unsafe_condition'] && !$row['has_suggestion'] && !$row['has_action']) {
-            $combinedText = strtolower(json_encode($cols));
-            if (str_contains($combinedText, 'tindakan bahaya') || str_contains($combinedText, 'tindakan tidak aman')) $row['has_unsafe_act'] = true;
-            if (str_contains($combinedText, 'kondisi bahaya') || str_contains($combinedText, 'kondisi tidak aman')) $row['has_unsafe_condition'] = true;
-            if (str_contains($combinedText, 'masukan') || str_contains($combinedText, 'solusi')) $row['has_suggestion'] = true;
-            if (str_contains($combinedText, 'action nyata') || str_contains($combinedText, 'action')) $row['has_action'] = true;
-
-            if (!$row['has_unsafe_act'] && !$row['has_unsafe_condition'] && !$row['has_suggestion'] && !$row['has_action']) {
-                $row['has_unsafe_condition'] = true;
-            }
-        }
+        // Tentukan indikator kegiatan berdasarkan teks indikator kegiatan yang dipilih (bukan dari keterangan)
+        $this->assignActivityIndicator($row, $rawIndicatorText);
 
         return !empty($row['reporter_name']) ? $row : null;
+    }
+
+    /**
+     * Parsing dan pemetaan indikator kegiatan IMPACT WARRIOR
+     */
+    protected function assignActivityIndicator(array &$row, string $text): void
+    {
+        $t = strtolower(trim($text));
+        $row['activity_indicator'] = $text ?: 'Kondisi Tidak Aman';
+
+        // 1. Menjadi Narasumber / Pemateri EHS & CSR (+4 Poin)
+        if (str_contains($t, 'narasumber') || str_contains($t, 'pemateri')) {
+            $row['has_speaker_activity'] = true;
+            $row['indicator_category'] = 'EHS / CSR';
+            $row['activity_indicator'] = 'Menjadi Narasumber / Pemateri';
+            return;
+        }
+
+        // 2. Mengikuti Kegiatan CSR (+2 Poin)
+        if (str_contains($t, 'kegiatan csr') || (str_contains($t, 'csr') && str_contains($t, 'kegiatan'))) {
+            $row['has_csr_activity'] = true;
+            $row['indicator_category'] = 'CSR';
+            $row['activity_indicator'] = 'Mengikuti Kegiatan CSR';
+            return;
+        }
+
+        // 3. Mengikuti Kegiatan EHS (+2 Poin)
+        if (str_contains($t, 'kegiatan ehs') || (str_contains($t, 'ehs') && str_contains($t, 'kegiatan'))) {
+            $row['has_ehs_activity'] = true;
+            $row['indicator_category'] = 'EHS';
+            $row['activity_indicator'] = 'Mengikuti Kegiatan EHS';
+            return;
+        }
+
+        // 4. Penanganan Langsung (+3 Poin)
+        if (str_contains($t, 'penanganan langsung') || str_contains($t, 'tindakan langsung') || (str_contains($t, 'action') && !str_contains($t, 'masukan') && !str_contains($t, 'rekomendasi'))) {
+            $row['has_direct_action'] = true;
+            $row['has_action'] = true;
+            $row['indicator_category'] = 'EHS';
+            $row['activity_indicator'] = 'Penanganan Langsung';
+            return;
+        }
+
+        // 5. Rekomendasi Perbaikan / Pencegahan (Masukan / Solusi) (+3 Poin)
+        if (str_contains($t, 'masukan') || str_contains($t, 'rekomendasi') || str_contains($t, 'pencegahan') || str_contains($t, 'saran') || str_contains($t, 'solusi')) {
+            $row['has_suggestion'] = true;
+            $row['indicator_category'] = 'EHS';
+            $row['activity_indicator'] = 'Rekomendasi Perbaikan / Pencegahan';
+            return;
+        }
+
+        // 6. Tindakan / Pelaporan Near Miss (+2 Poin)
+        if (str_contains($t, 'tindakan tidak aman') || str_contains($t, 'tindakan bahaya') || str_contains($t, 'near miss') || str_contains($t, 'unsafe act')) {
+            $row['has_unsafe_act'] = true;
+            $row['indicator_category'] = 'EHS';
+            $row['activity_indicator'] = 'Tindakan / Pelaporan Near Miss';
+            return;
+        }
+
+        // 7. Kondisi Tidak Aman (+1 Poin) - Default jika kondisi bahaya atau fallback
+        $row['has_unsafe_condition'] = true;
+        $row['indicator_category'] = 'EHS';
+        $row['activity_indicator'] = 'Kondisi Tidak Aman';
     }
 }

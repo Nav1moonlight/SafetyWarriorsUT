@@ -13,12 +13,19 @@ class SafetyReport extends Model
     protected $fillable = [
         'sheet_row_id',
         'reported_at',
+        'nrp',
         'reporter_name',
         'department',
+        'activity_indicator',
+        'indicator_category',
         'has_unsafe_act',
         'has_unsafe_condition',
         'has_suggestion',
         'has_action',
+        'has_direct_action',
+        'has_ehs_activity',
+        'has_csr_activity',
+        'has_speaker_activity',
         'points',
         'description',
         'photo_url',
@@ -32,32 +39,58 @@ class SafetyReport extends Model
         'has_unsafe_condition' => 'boolean',
         'has_suggestion' => 'boolean',
         'has_action' => 'boolean',
+        'has_direct_action' => 'boolean',
+        'has_ehs_activity' => 'boolean',
+        'has_csr_activity' => 'boolean',
+        'has_speaker_activity' => 'boolean',
         'points' => 'integer',
         'raw_payload' => 'array',
     ];
 
     /**
-     * Hitung total poin berdasarkan aturan K3 Safety Warrior:
-     * - Tindakan Tidak Aman (Unsafe Act) = +5
-     * - Kondisi Tidak Aman (Unsafe Condition) = +3
-     * - Masukan Pengendalian/Perbaikan = +3
-     * - Action Perbaikan = +4
+     * Hitung total poin berdasarkan aturan IMPACT WARRIOR:
+     * - Kondisi Tidak Aman = +1
+     * - Tindakan / Pelaporan Near Miss = +2
+     * - Rekomendasi Perbaikan / Pencegahan (Masukan) = +3
+     * - Penanganan Langsung (Action Langsung) = +3
+     * - Mengikuti Kegiatan EHS = +2
+     * - Mengikuti Kegiatan CSR = +2
+     * - Menjadi Narasumber / Pemateri EHS & CSR = +4
      */
-    public static function calculatePoints(bool $unsafeAct, bool $unsafeCondition, bool $suggestion, bool $action): int
-    {
+    public static function calculatePoints(
+        bool $unsafeCondition,
+        bool $unsafeAct,
+        bool $suggestion,
+        bool $directAction,
+        bool $action,
+        bool $ehsActivity = false,
+        bool $csrActivity = false,
+        bool $speakerActivity = false
+    ): int {
         $points = 0;
-        if ($unsafeAct) {
-            $points += 5;
-        }
+
         if ($unsafeCondition) {
-            $points += 3;
+            $points += 1;
+        }
+        if ($unsafeAct) {
+            $points += 2;
         }
         if ($suggestion) {
             $points += 3;
         }
-        if ($action) {
+        if ($directAction || $action) {
+            $points += 3;
+        }
+        if ($ehsActivity) {
+            $points += 2;
+        }
+        if ($csrActivity) {
+            $points += 2;
+        }
+        if ($speakerActivity) {
             $points += 4;
         }
+
         return $points;
     }
 
