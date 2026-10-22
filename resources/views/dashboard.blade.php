@@ -170,15 +170,15 @@
                 <!-- Rank 2 Podium -->
                 @if($rank2)
                     <div class="md:col-span-4 order-2 md:order-1 box-industrial p-5 flex flex-col justify-between relative border-t-2 border-t-zinc-400">
-                        <div class="flex items-start justify-between">
-                            <div>
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0 flex-1">
                                 <span class="font-mono text-[11px] uppercase text-[var(--text-secondary)]">PERINGKAT 02</span>
-                                <div class="flex items-center space-x-2 mt-1">
-                                    <h3 class="font-heading font-bold text-xl sm:text-2xl uppercase tracking-tight text-[var(--text-primary)]">
+                                <div class="flex flex-wrap items-baseline gap-1.5 mt-1">
+                                    <h3 class="font-heading font-bold text-xl sm:text-2xl uppercase tracking-tight text-[var(--text-primary)] truncate max-w-full" title="{{ $rank2->reporter_name }}">
                                         {{ $rank2->reporter_name }}
                                     </h3>
                                     @if(!empty($rank2->nrp))
-                                        <span class="px-1.5 py-0.2 bg-[var(--bg)] text-[var(--text-primary)] border border-[var(--border)] font-mono text-[10px] font-bold">
+                                        <span class="px-1.5 py-0.5 bg-[var(--bg)] text-[var(--text-primary)] border border-[var(--border)] font-mono text-[10px] font-bold shrink-0">
                                             NRP: {{ $rank2->nrp }}
                                         </span>
                                     @endif
@@ -187,7 +187,7 @@
                                     DEPT. {{ $rank2->department }} • {{ $rank2->total_reports }} LAPORAN
                                 </div>
                             </div>
-                            <div class="font-heading font-black text-4xl sm:text-5xl stroke-num select-none">
+                            <div class="font-heading font-black text-4xl sm:text-5xl stroke-num select-none shrink-0 pl-2">
                                 02
                             </div>
                         </div>
@@ -213,7 +213,7 @@
                                     @endif
                                 </div>
                             </div>
-                            <div class="text-right font-heading font-black text-3xl sm:text-4xl text-[var(--text-primary)] tabular-nums">
+                            <div class="text-right font-heading font-black text-3xl sm:text-4xl text-[var(--text-primary)] tabular-nums shrink-0 pl-2">
                                 <span data-countup="{{ $rank2->total_points }}">{{ $rank2->total_points }}</span>
                                 <span class="text-xs font-mono font-normal text-[var(--text-secondary)] block">POIN</span>
                             </div>
@@ -223,17 +223,17 @@
 
                 <!-- Rank 1 Podium -->
                 <div class="md:col-span-4 order-1 md:order-2 box-industrial p-6 flex flex-col justify-between relative border-2 border-[var(--accent)] bg-[var(--surface)]">
-                    <div class="flex items-start justify-between">
-                        <div>
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="min-w-0 flex-1">
                             <span class="font-mono text-[11px] font-bold uppercase tracking-wider text-[var(--accent)] bg-[var(--bg)] px-2 py-0.5 border border-[var(--accent)] inline-block">
                                 JUARA 1 • IMPACT WARRIOR
                             </span>
-                            <div class="flex items-center space-x-2 mt-2">
-                                <h2 class="font-heading font-black text-2xl sm:text-3xl uppercase tracking-tight text-[var(--text-primary)]">
+                            <div class="flex flex-wrap items-baseline gap-1.5 mt-2">
+                                <h2 class="font-heading font-black text-2xl sm:text-3xl uppercase tracking-tight text-[var(--text-primary)] break-words" title="{{ $rank1->reporter_name }}">
                                     {{ $rank1->reporter_name }}
                                 </h2>
                                 @if(!empty($rank1->nrp))
-                                    <span class="px-1.5 py-0.5 bg-[var(--bg)] text-[var(--accent)] border border-[var(--accent)] font-mono text-[10px] font-bold">
+                                    <span class="px-1.5 py-0.5 bg-[var(--bg)] text-[var(--accent)] border border-[var(--accent)] font-mono text-[10px] font-bold shrink-0">
                                         NRP: {{ $rank1->nrp }}
                                     </span>
                                 @endif
@@ -242,7 +242,7 @@
                                 DEPT. {{ $rank1->department }} • {{ $rank1->total_reports }} LAPORAN
                             </div>
                         </div>
-                        <div class="font-heading font-black text-6xl stroke-num-gold select-none">
+                        <div class="font-heading font-black text-5xl sm:text-6xl stroke-num-gold select-none shrink-0 pl-2">
                             01
                         </div>
                     </div>
@@ -268,7 +268,7 @@
                                 @endif
                             </div>
                         </div>
-                        <div class="text-right font-heading font-black text-5xl sm:text-6xl text-[var(--accent)] tabular-nums">
+                        <div class="text-right font-heading font-black text-4xl sm:text-5xl text-[var(--accent)] tabular-nums shrink-0 pl-2">
                             <span data-countup="{{ $rank1->total_points }}">{{ $rank1->total_points }}</span>
                             <span class="text-xs font-mono font-bold text-[var(--accent)] block tracking-widest">POIN</span>
                         </div>
@@ -287,15 +287,15 @@
                 <!-- Rank 3 Podium -->
                 @if($rank3)
                     <div class="md:col-span-4 order-3 box-industrial p-5 flex flex-col justify-between relative border-t-2 border-t-[#B45309]">
-                        <div class="flex items-start justify-between">
-                            <div>
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0 flex-1">
                                 <span class="font-mono text-[11px] uppercase text-[var(--text-secondary)]">PERINGKAT 03</span>
-                                <div class="flex items-center space-x-2 mt-1">
-                                    <h3 class="font-heading font-bold text-xl sm:text-2xl uppercase tracking-tight text-[var(--text-primary)]">
+                                <div class="flex flex-wrap items-baseline gap-1.5 mt-1">
+                                    <h3 class="font-heading font-bold text-xl sm:text-2xl uppercase tracking-tight text-[var(--text-primary)] truncate max-w-full" title="{{ $rank3->reporter_name }}">
                                         {{ $rank3->reporter_name }}
                                     </h3>
                                     @if(!empty($rank3->nrp))
-                                        <span class="px-1.5 py-0.2 bg-[var(--bg)] text-[var(--text-primary)] border border-[var(--border)] font-mono text-[10px] font-bold">
+                                        <span class="px-1.5 py-0.5 bg-[var(--bg)] text-[var(--text-primary)] border border-[var(--border)] font-mono text-[10px] font-bold shrink-0">
                                             NRP: {{ $rank3->nrp }}
                                         </span>
                                     @endif
@@ -304,7 +304,7 @@
                                     DEPT. {{ $rank3->department }} • {{ $rank3->total_reports }} LAPORAN
                                 </div>
                             </div>
-                            <div class="font-heading font-black text-4xl sm:text-5xl stroke-num select-none">
+                            <div class="font-heading font-black text-4xl sm:text-5xl stroke-num select-none shrink-0 pl-2">
                                 03
                             </div>
                         </div>
@@ -330,7 +330,7 @@
                                     @endif
                                 </div>
                             </div>
-                            <div class="text-right font-heading font-black text-3xl sm:text-4xl text-[var(--text-primary)] tabular-nums">
+                            <div class="text-right font-heading font-black text-3xl sm:text-4xl text-[var(--text-primary)] tabular-nums shrink-0 pl-2">
                                 <span data-countup="{{ $rank3->total_points }}">{{ $rank3->total_points }}</span>
                                 <span class="text-xs font-mono font-normal text-[var(--text-secondary)] block">POIN</span>
                             </div>

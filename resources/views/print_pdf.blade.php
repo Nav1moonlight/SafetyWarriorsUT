@@ -62,6 +62,8 @@
                 background-color: #FFFFFF !important;
                 color: #000000 !important;
                 padding: 0 !important;
+                margin: 0 !important;
+                font-size: 10.5px !important;
             }
             .page-container {
                 box-shadow: none !important;
@@ -73,10 +75,29 @@
             }
             @page {
                 size: A4 landscape;
-                margin: 10mm 8mm 10mm 8mm;
+                margin: 8mm 6mm 8mm 6mm;
+            }
+            table {
+                width: 100% !important;
+                table-layout: fixed !important;
+                font-size: 10px !important;
+            }
+            th, td {
+                padding: 4px 5px !important;
+                word-wrap: break-word !important;
+                overflow-wrap: break-word !important;
             }
             tr {
-                page-break-inside: avoid;
+                page-break-inside: avoid !important;
+            }
+            thead {
+                display: table-header-group !important;
+            }
+            tfoot {
+                display: table-footer-group !important;
+            }
+            .avoid-break {
+                page-break-inside: avoid !important;
             }
         }
     </style>
@@ -316,11 +337,11 @@
         </table>
 
         <!-- Kolom Tanda Tangan / Verifikasi (Sempurna untuk arsip PDF formal) -->
-        <div class="mt-8 pt-4 border-t border-[var(--border)] flex items-start justify-between font-mono text-xs text-[var(--text-secondary)]">
+        <div class="avoid-break mt-6 pt-4 border-t border-[var(--border)] flex items-start justify-between font-mono text-xs text-[var(--text-secondary)]">
             <div>
                 <p class="font-bold text-[var(--text-primary)] mb-1">CATATAN EVALUASI EHS & CSR:</p>
                 <p class="text-[11px] text-[var(--text-secondary)] leading-relaxed max-w-md">
-                    Rekapitulasi ini bersumber dari verifikasi temuan inspeksi bahaya, tindakan keselamatan, saran perbaikan, aksi penanganan langsung, serta pemateri K3 periode 01 s.d. 25 {{ $monthName }} {{ $selectedYear }}.
+                    Rekapitulasi ini bersumber dari verifikasi temuan inspeksi bahaya, tindakan keselamatan, saran perbaikan, aksi penanganan langsung, serta pemateri K3 periode {{ $startDate->format('d/m/Y') }} s.d. {{ $endDate->format('d/m/Y') }}.
                 </p>
             </div>
 
