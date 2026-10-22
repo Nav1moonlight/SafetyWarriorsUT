@@ -35,8 +35,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>@yield('title', 'Safety Warrior') — K3 Scoreboard & Award</title>
-    <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
+    <title>@yield('title', 'Impact Warrior') — K3 Scoreboard & Award</title>
+    <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+    <link rel="apple-touch-icon" href="{{ asset('icons/icon-192x192.png') }}">
+    
+    <!-- PWA Manifest & Meta Tags -->
+    <link rel="manifest" href="{{ asset('manifest.json') }}">
+    <meta name="theme-color" content="#D49B00">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ImpactWarrior">
     
     <!-- Google Fonts: Barlow Condensed, IBM Plex Sans, IBM Plex Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -205,6 +214,15 @@
                            class="px-3 py-1.5 uppercase font-medium transition {{ request()->routeIs('settings') ? 'text-[var(--accent)] border-b-2 border-[var(--accent)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]' }}">
                             SUMBER DATA
                         </a>
+                        @if(!empty($globalGoogleFormUrl))
+                            <a href="{{ $globalGoogleFormUrl }}" target="_blank" rel="noopener noreferrer"
+                               class="px-3 py-1.5 bg-[var(--accent)]/15 border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-black uppercase font-bold transition flex items-center space-x-1"
+                               style="border-radius: var(--radius);"
+                               title="Buka Google Form Input Temuan K3 & CSR">
+                                <i class="fa-solid fa-file-pen text-xs mr-1"></i>
+                                <span>ISI FORM</span>
+                            </a>
+                        @endif
                     </div>
 
                     <!-- Theme Toggle Button -->
@@ -260,8 +278,22 @@
         @yield('content')
     </main>
 
+    <!-- Floating Action Button (Quick Google Form Navigation) -->
+    @if(!empty($globalGoogleFormUrl))
+        <div class="fixed bottom-16 sm:bottom-6 right-4 sm:right-6 z-40">
+            <a href="{{ $globalGoogleFormUrl }}" target="_blank" rel="noopener noreferrer"
+               class="flex items-center space-x-2 px-4 py-2.5 bg-[#D49B00] hover:bg-yellow-400 text-black font-mono font-bold text-xs uppercase tracking-wider shadow-2xl transition-all transform hover:scale-105 active:scale-95 border-2 border-black/30"
+               style="border-radius: 9999px;"
+               title="Buka Google Form Input Temuan K3 & CSR">
+                <i class="fa-solid fa-file-pen text-sm"></i>
+                <span class="inline">ISI LAPORAN K3</span>
+                <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+            </a>
+        </div>
+    @endif
+
     <!-- Mobile Bottom Navigation Bar (Fixed on small screens) -->
-    <div class="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-[var(--bg)] border-t border-[var(--border)] px-4 py-2 flex items-center justify-around font-mono text-[11px] uppercase">
+    <div class="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-[var(--bg)] border-t border-[var(--border)] px-3 py-2 flex items-center justify-around font-mono text-[10px] uppercase">
         <a href="{{ route('dashboard') }}" 
            class="flex flex-col items-center py-1 {{ request()->routeIs('dashboard') ? 'text-[var(--accent)] font-bold' : 'text-[var(--text-secondary)]' }}">
             <i class="fa-solid fa-list-ol text-sm mb-0.5"></i>
@@ -272,6 +304,13 @@
             <i class="fa-solid fa-camera text-sm mb-0.5"></i>
             <span>GALERI</span>
         </button>
+        @if(!empty($globalGoogleFormUrl))
+            <a href="{{ $globalGoogleFormUrl }}" target="_blank" rel="noopener noreferrer"
+               class="flex flex-col items-center py-1 text-[var(--accent)] font-bold">
+                <i class="fa-solid fa-file-pen text-sm mb-0.5 animate-pulse"></i>
+                <span>FORM</span>
+            </a>
+        @endif
         <button @click="mobileTab = 'stats'; document.getElementById('stats-section')?.scrollIntoView({behavior: 'smooth'});"
                 class="flex flex-col items-center py-1 text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
             <i class="fa-solid fa-chart-column text-sm mb-0.5"></i>
@@ -279,8 +318,8 @@
         </button>
         <a href="{{ route('settings') }}" 
            class="flex flex-col items-center py-1 {{ request()->routeIs('settings') ? 'text-[var(--accent)] font-bold' : 'text-[var(--text-secondary)]' }}">
-            <i class="fa-solid fa-database text-sm mb-0.5"></i>
-            <span>SHEET</span>
+            <i class="fa-solid fa-gear text-sm mb-0.5"></i>
+            <span>SETTING</span>
         </a>
     </div>
 
@@ -482,6 +521,16 @@
                 requestAnimationFrame(updateCount);
             });
         });
+    </script>
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then((reg) => console.log('PWA ServiceWorker registered with scope:', reg.scope))
+                    .catch((err) => console.log('PWA ServiceWorker registration failed:', err));
+            });
+        }
     </script>
 </body>
 </html>

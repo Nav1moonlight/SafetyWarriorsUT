@@ -269,13 +269,14 @@ class SafetyWarriorController extends Controller
     public function settings()
     {
         $googleSheetId = AppSetting::get('google_sheet_id', '1q_RvGbrrhVMseMBb-I6fPDVnpX7ng-MZv9FJ1FR-UPQ');
+        $googleFormUrl = AppSetting::get('google_form_url', '');
         $lastSyncAt = AppSetting::get('last_sync_at');
         $lastSyncStatus = AppSetting::get('last_sync_status');
         $allowedUsers = AppSetting::get('allowed_users', '');
 
         $testResult = $this->syncService->testConnection($googleSheetId);
 
-        return view('settings', compact('googleSheetId', 'lastSyncAt', 'lastSyncStatus', 'allowedUsers', 'testResult'));
+        return view('settings', compact('googleSheetId', 'googleFormUrl', 'lastSyncAt', 'lastSyncStatus', 'allowedUsers', 'testResult'));
     }
 
     /**
@@ -287,6 +288,10 @@ class SafetyWarriorController extends Controller
         if (!empty($sheetId)) {
             AppSetting::set('google_sheet_id', $sheetId);
         }
+
+        // Simpan Google Form URL
+        $formUrl = trim($request->input('google_form_url', ''));
+        AppSetting::set('google_form_url', $formUrl);
 
         // Simpan whitelist username
         $allowedUsers = trim($request->input('allowed_users', ''));
@@ -300,7 +305,7 @@ class SafetyWarriorController extends Controller
             );
         }
 
-        return redirect()->route('settings')->with('success', 'Konfigurasi Sheet ID dan Penguncian Nama berhasil disimpan.');
+        return redirect()->route('settings')->with('success', 'Konfigurasi Pengaturan & Link Google Form berhasil disimpan.');
     }
 
 

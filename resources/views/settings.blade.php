@@ -53,41 +53,16 @@
         </div>
     </div>
 
-    <!-- Sheet ID Configuration Form -->
+    <!-- Configuration Form -->
     <div class="box-industrial p-5 sm:p-6 space-y-4">
         <div class="font-mono text-xs uppercase tracking-wider text-[var(--text-secondary)]">
-            PENGATURAN ID SPREADSHEET
+            PENGATURAN SUMBER DATA & GOOGLE FORM
         </div>
 
         <form action="{{ route('settings.update') }}" method="POST" class="space-y-4">
             @csrf
-            <div>
-                <div class="flex items-center justify-between mb-1.5 font-mono text-xs">
-                    <label for="google_sheet_id" class="text-[var(--text-primary)] uppercase font-semibold">
-                        GOOGLE SHEET ID ATAU URL SPREADSHEET
-                    </label>
-                    <a href="https://docs.google.com/spreadsheets/d/{{ $googleSheetId }}/edit" 
-                       target="_blank" 
-                       class="text-[var(--accent)] hover:underline uppercase inline-flex items-center">
-                        BUKA SHEET ↗
-                    </a>
-                </div>
-
-                <input type="text" name="google_sheet_id" id="google_sheet_id" 
-                       value="{{ old('google_sheet_id', $googleSheetId) }}" 
-                       class="w-full bg-[var(--bg)] border border-[var(--border)] px-3.5 py-2.5 font-mono text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]" 
-                       placeholder="1q_RvGbrrhVMseMBb-I6fPDVnpX7ng-MZv9FJ1FR-UPQ" 
-                       required>
-            </div>
-
-    <!-- Sheet ID Configuration Form -->
-    <div class="box-industrial p-5 sm:p-6 space-y-4">
-        <div class="font-mono text-xs uppercase tracking-wider text-[var(--text-secondary)]">
-            PENGATURAN ID SPREADSHEET
-        </div>
-
-        <form action="{{ route('settings.update') }}" method="POST" class="space-y-4">
-            @csrf
+            
+            <!-- Google Sheet ID -->
             <div>
                 <div class="flex items-center justify-between mb-1.5 font-mono text-xs">
                     <label for="google_sheet_id" class="text-[var(--text-primary)] uppercase font-semibold">
@@ -106,7 +81,30 @@
                        placeholder="1q_RvGbrrhVMseMBb-I6fPDVnpX7ng-MZv9FJ1FR-UPQ" 
                        required>
                 <p class="font-mono text-[11px] text-[var(--text-secondary)] mt-1.5">
-                    ID adalah kode acak di URL spreadsheet antara <code class="text-[var(--accent)]">/d/</code> dan <code class="text-[var(--accent)]">/edit</code>. Anda juga dapat langsung menempelkan (paste) seluruh link URL Google Sheet di sini.
+                    ID adalah kode acak di URL spreadsheet antara <code class="text-[var(--accent)]">/d/</code> dan <code class="text-[var(--accent)]">/edit</code>. Anda juga dapat langsung menempelkan seluruh URL Google Sheet.
+                </p>
+            </div>
+
+            <!-- Google Form URL (Quick Navigation) -->
+            <div class="pt-2 border-t border-[var(--border)]">
+                <div class="flex items-center justify-between mb-1.5 font-mono text-xs">
+                    <label for="google_form_url" class="text-[var(--text-primary)] uppercase font-semibold flex items-center space-x-1.5">
+                        <i class="fa-solid fa-file-pen text-[var(--accent)]"></i>
+                        <span>LINK GOOGLE FORM LAPORAN K3 & CSR (TOMBOL NAVIGASI CEPAT)</span>
+                    </label>
+                    @if(!empty($googleFormUrl))
+                        <a href="{{ $googleFormUrl }}" target="_blank" class="text-[var(--accent)] hover:underline uppercase inline-flex items-center">
+                            TEST BUKA FORM ↗
+                        </a>
+                    @endif
+                </div>
+
+                <input type="url" name="google_form_url" id="google_form_url" 
+                       value="{{ old('google_form_url', $googleFormUrl) }}" 
+                       class="w-full bg-[var(--bg)] border border-[var(--border)] px-3.5 py-2.5 font-mono text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]" 
+                       placeholder="https://docs.google.com/forms/d/e/.../viewform">
+                <p class="font-mono text-[11px] text-[var(--text-secondary)] mt-1.5">
+                    Masukkan URL Google Form input laporan karyawan agar muncul tombol pintasan <strong>"ISI LAPORAN K3"</strong> di navbar & floating action button.
                 </p>
             </div>
 

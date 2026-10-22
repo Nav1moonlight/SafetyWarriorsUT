@@ -34,6 +34,14 @@ foreach ($p in $phpProcesses) {
     $stoppedCount++
 }
 
+# 3. Hentikan proses Cloudflare Tunnel jika ada
+$cfProcesses = Get-Process cloudflared -ErrorAction SilentlyContinue
+foreach ($cf in $cfProcesses) {
+    Stop-Process -Id $cf.Id -Force -ErrorAction SilentlyContinue
+    Write-Host "✓ Menghentikan Cloudflare Tunnel (PID: $($cf.Id))" -ForegroundColor Green
+    $stoppedCount++
+}
+
 if ($stoppedCount -eq 0) {
     Write-Host "Tidak ada proses Impact Warrior yang sedang aktif." -ForegroundColor Gray
 } else {

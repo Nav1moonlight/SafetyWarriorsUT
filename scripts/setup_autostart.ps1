@@ -18,6 +18,10 @@ try {
     
     Write-Host "Berhasil memasang shortcut di Startup Folder Windows:" -ForegroundColor Green
     Write-Host "  -> $shortcutPath" -ForegroundColor Gray
+
+    # Pasang juga shortcut Desktop ber-ikon resmi
+    & "$PSScriptRoot\create_desktop_shortcut.ps1"
+
     Write-Host "`nPengaturan Selesai! Impact Warrior akan otomatis berjalan di background setiap kali komputer menyala." -ForegroundColor Green
 } catch {
     Write-Warning "Gagal membuat shortcut Startup: $_"
